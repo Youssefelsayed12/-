@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>حاسبة تسعير المنتجات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #eef2f1;
+    --panel: #ffffff;
+    --ink: #16302c;
+    --ink-soft: #55706b;
+    --line: #d7e2df;
+    --teal: #0e6e63;
+    --teal-deep: #0a4f47;
+    --amber: #c8862b;
+    --amber-soft: #fbeed9;
+    --danger: #b5452f;
+    --radius: 12px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans Arabic', sans-serif;
+    padding:32px 16px 80px;
+  }
+  .wrap{max-width:520px;margin:0 auto;}
+
+  header{margin-bottom:20px;}
+  h1{
+    font-family:'Tajawal', sans-serif;
+    font-weight:900;
+    font-size:26px;
+    margin:0 0 4px;
+    color:var(--teal-deep);
+  }
+  .sub{color:var(--ink-soft);font-size:14px;margin:0;}
+
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+  button{
+    font-family:'IBM Plex Sans Arabic', sans-serif;
+    cursor:pointer;
+    border:none;
+    border-radius:8px;
+    font-weight:600;
+    font-size:14px;
+    transition:transform .12s ease, background .12s ease;
+  }
+  button:active{transform:scale(.97);}
+
+  .btn-primary{background:var(--teal);color:#fff;padding:11px 18px;flex:1;}
+  .btn-primary:hover{background:var(--teal-deep);}
+  .btn-ghost{background:var(--panel);color:var(--teal-deep);border:1.5px solid var(--line);padding:10px 16px;flex:1;}
+  .btn-ghost:hover{border-color:var(--teal);}
+
+  .cards{display:flex;flex-direction:column;gap:18px;margin-top:20px;}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:0 1px 3px rgba(16,48,44,.06);
+    overflow:hidden;
+  }
+  .card-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 14px;
+    background:#f4f8f7;
+    border-bottom:1px solid var(--line);
+  }
+  .card-head .badge{
+    font-family:'Tajawal',sans-serif;font-weight:700;font-size:13px;
+    color:var(--teal-deep);
+    background:var(--amber-soft);
+    color:#7a4e12;
+    border-radius:6px;
+    padding:3px 9px;
+  }
+  .card-body{padding:14px;display:flex;flex-direction:column;gap:12px;}
+
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field-label{
+    display:flex;align-items:center;justify-content:space-between;
+    font-family:'Tajawal',sans-serif;font-weight:700;font-size:13px;
+    color:var(--teal-deep);
+  }
+  .field-label .label-actions{display:flex;gap:2px;}
+  .edit-col, .remove-col{
+    background:none;border:none;
+    font-size:13px;line-height:1;padding:3px 6px;border-radius:5px;
+  }
+  .edit-col{color:var(--teal-deep);}
+  .edit-col:hover{background:#e2efec;}
+  .remove-col{color:#a04030;}
+  .remove-col:hover{background:#f6dedb;}
+
+  input[type=text], input[type=number], textarea{
+    width:100%;
+    border:1.5px solid var(--line);
+    background:#f8faf9;
+    border-radius:8px;
+    padding:10px 12px;
+    font-family:'IBM Plex Sans Arabic', sans-serif;
+    font-size:14px;
+    color:var(--ink);
+    text-align:right;
+  }
+  input[type=number]{font-family:'JetBrains Mono', monospace;text-align:left;direction:ltr;}
+  input:focus, textarea:focus{outline:none;border-color:var(--teal);background:#fff;}
+
+  .field.profit input{background:var(--amber-soft);border-color:#ecd6ac;}
+
+  .total-field{
+    margin-top:4px;
+    background:linear-gradient(135deg,#0e6e63,#0a4f47);
+    border-radius:10px;
+    padding:14px 16px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .total-field .field-label{color:#dff3ef;}
+  .total-field .edit-col{color:#dff3ef;}
+  .total-field .edit-col:hover{background:rgba(255,255,255,.15);}
+  .total-value{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;font-size:20px;color:#fff;
+  }
+  .total-value.flash{animation:flash .5s ease;}
+  @keyframes flash{
+    0%{background:rgba(255,255,255,.35);border-radius:6px;}
+    100%{background:transparent;}
+  }
+
+  .row-remove{
+    background:none;border:none;color:var(--ink-soft);
+    font-size:15px;padding:5px 8px;border-radius:6px;
+  }
+  .row-remove:hover{background:#f6dedb;color:var(--danger);}
+
+  .add-col-tile{
+    border:1.5px dashed var(--line);
+    border-radius:9px;
+    padding:12px;
+    text-align:center;
+    color:var(--teal-deep);
+    background:#f8fbfa;
+  }
+  .add-col-tile button{
+    background:none;border:none;color:var(--teal-deep);
+    font-weight:700;font-size:14px;width:100%;padding:4px;
+  }
+  .add-col-tile button:hover{color:var(--teal);}
+
+  .empty-state{
+    text-align:center;color:#8aa19c;
+    padding:34px 20px;
+    border:1.5px dashed var(--line);
+    border-radius:var(--radius);
+    background:var(--panel);
+  }
+
+  .footer-note{
+    margin-top:22px;
+    font-size:13px;
+    color:var(--ink-soft);
+    background:var(--panel);
+    border:1px dashed var(--line);
+    border-radius:8px;
+    padding:14px 16px;
+    line-height:1.9;
+  }
+  .footer-note b{color:var(--teal-deep);}
+
+  .tabs{display:flex;gap:8px;margin-top:18px;border-bottom:2px solid var(--line);}
+  .tab-btn{
+    background:none;border:none;
+    padding:10px 6px;
+    font-family:'Tajawal',sans-serif;font-weight:700;font-size:14px;
+    color:var(--ink-soft);
+    border-bottom:3px solid transparent;
+    margin-bottom:-2px;
+  }
+  .tab-btn.active{color:var(--teal-deep);border-bottom-color:var(--teal);}
+
+  /* Top bar with hamburger */
+  .topbar{
+    display:flex;align-items:center;gap:12px;
+    padding:14px 18px;
+    background:var(--panel);
+    border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:20;
+  }
+  .hamburger-btn{
+    font-size:22px;line-height:1;
+    background:none;border:none;color:var(--teal-deep);
+    padding:4px 8px;border-radius:8px;
+  }
+  .hamburger-btn:hover{background:#f0f5f4;}
+  .topbar-title{
+    font-family:'Tajawal',sans-serif;font-weight:900;font-size:16px;color:var(--teal-deep);
+  }
+
+  /* Sidebar navigation */
+  .sidebar{
+    position:fixed;top:0;right:0;height:100vh;width:270px;max-width:82vw;
+    background:var(--panel);
+    border-left:1px solid var(--line);
+    transform:translateX(100%);
+    transition:transform .28s ease;
+    z-index:40;
+    overflow-y:auto;
+    padding:22px 16px;
+    display:flex;flex-direction:column;gap:5px;
+    box-shadow:-10px 0 26px rgba(16,48,44,.14);
+  }
+  .sidebar.open{transform:translateX(0);}
+  .sidebar-header{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--line);}
+  .sidebar-header h1{
+    font-family:'Tajawal',sans-serif;font-weight:900;font-size:19px;
+    color:var(--teal-deep);margin:0 0 6px;
+  }
+  .sidebar-header .sub{color:var(--ink-soft);font-size:12px;margin:0;line-height:1.6;}
+
+  .side-tab-btn{
+    text-align:right;width:100%;
+    padding:12px 14px;border-radius:10px;
+    background:none;border:none;
+    font-family:'IBM Plex Sans Arabic',sans-serif;font-weight:600;font-size:14px;
+    color:var(--ink-soft);
+    display:flex;align-items:center;gap:10px;
+  }
+  .side-tab-btn span{font-size:16px;}
+  .side-tab-btn.active{background:var(--teal);color:#fff;font-weight:700;}
+  .side-tab-btn:hover:not(.active){background:#f0f5f4;}
+
+  .sidebar-overlay{
+    position:fixed;inset:0;
+    background:rgba(10,30,28,.35);
+    z-index:30;opacity:0;pointer-events:none;
+    transition:opacity .28s ease;
+  }
+  .sidebar-overlay.open{opacity:1;pointer-events:auto;}
+
+  /* Month picker modal */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(10,30,28,.45);
+    display:none;align-items:center;justify-content:center;
+    z-index:60;padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-card{
+    background:var(--panel);border-radius:16px;
+    padding:24px 20px;width:100%;max-width:360px;
+    box-shadow:0 20px 45px rgba(10,48,44,.2);
+  }
+  .modal-card h3{
+    font-family:'Tajawal',sans-serif;font-weight:900;color:var(--teal-deep);
+    font-size:18px;margin:0 0 16px;text-align:center;
+  }
+  .modal-card select{
+    width:100%;border:1.5px solid var(--line);border-radius:9px;
+    padding:12px 14px;font-family:'IBM Plex Sans Arabic',sans-serif;
+    font-size:14px;color:var(--ink);background:#f8faf9;margin-bottom:12px;
+  }
+  .modal-card select:focus{outline:none;border-color:var(--teal);}
+  .modal-actions{display:flex;gap:10px;margin-top:6px;}
+  .modal-actions button{flex:1;padding:12px;border-radius:9px;}
+
+  /* Notes page (Keep-style) */
+  .notes-add-box{
+    background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:14px;margin-bottom:18px;
+    box-shadow:0 1px 3px rgba(16,48,44,.05);
+  }
+  .notes-add-box textarea{
+    width:100%;border:none;resize:none;
+    font-family:'IBM Plex Sans Arabic',sans-serif;font-size:14px;
+    color:var(--ink);min-height:44px;background:transparent;
+  }
+  .notes-add-box textarea:focus{outline:none;}
+  .notes-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:12px;
+  }
+  .note-card{
+    border-radius:12px;padding:14px;
+    display:flex;flex-direction:column;gap:8px;
+    min-height:100px;
+    box-shadow:0 1px 3px rgba(16,48,44,.08);
+    position:relative;
+  }
+  .note-card textarea{
+    width:100%;border:none;background:transparent;resize:none;
+    font-family:'IBM Plex Sans Arabic',sans-serif;font-size:13.5px;
+    color:#2a2a28;min-height:70px;flex:1;
+  }
+  .note-card textarea:focus{outline:none;}
+  .note-del{
+    align-self:flex-end;
+    background:none;border:none;font-size:14px;
+    color:rgba(0,0,0,.45);padding:2px 6px;border-radius:6px;
+  }
+  .note-del:hover{background:rgba(0,0,0,.08);color:rgba(0,0,0,.7);}
+
+  .page{display:none;}
+  .page.active{display:block;}
+
+  .summary-box{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px;
+    margin-top:18px;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .summary-readout{
+    background:#f4f8f7;
+    border:1px solid var(--line);
+    border-radius:9px;
+    padding:12px 14px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .summary-readout .lbl{font-family:'Tajawal',sans-serif;font-weight:700;font-size:13px;color:var(--teal-deep);}
+  .summary-readout .val{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:17px;color:var(--teal-deep);}
+  .summary-total{
+    background:linear-gradient(135deg,#0e6e63,#0a4f47);
+    border-radius:10px;
+    padding:16px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .summary-total .lbl{font-family:'Tajawal',sans-serif;font-weight:700;font-size:14px;color:#dff3ef;}
+  .summary-total .val{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:22px;color:#fff;}
+  .val.flash{animation:flash .5s ease;}
+
+  /* Login screen */
+  #loginScreen{
+    min-height:100vh;
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(14,110,99,.16), transparent 45%),
+      radial-gradient(circle at 85% 80%, rgba(200,134,43,.14), transparent 45%),
+      var(--bg);
+    position:relative;
+    overflow:hidden;
+  }
+  .login-card{
+    position:relative;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:0 20px 45px rgba(10,48,44,.14), 0 2px 8px rgba(10,48,44,.06);
+    padding:36px 28px 30px;
+    width:100%;max-width:370px;
+    text-align:center;
+    animation:cardIn .5s ease;
+  }
+  @keyframes cardIn{
+    from{opacity:0;transform:translateY(14px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  .login-card .lock-icon{
+    width:64px;height:64px;
+    border-radius:50%;
+    background:linear-gradient(135deg,var(--teal),var(--teal-deep));
+    box-shadow:0 8px 18px rgba(10,79,71,.28);
+    display:flex;align-items:center;justify-content:center;
+    font-size:28px;
+    margin:0 auto 18px;
+  }
+  .login-card h2{
+    font-family:'Tajawal',sans-serif;font-weight:900;
+    color:var(--teal-deep);font-size:22px;margin:0 0 6px;
+  }
+  .login-card p{color:var(--ink-soft);font-size:13px;margin:0 0 22px;line-height:1.6;}
+  .login-field{position:relative;margin-bottom:12px;}
+  .login-field .field-icon{
+    position:absolute;top:50%;right:14px;transform:translateY(-50%);
+    font-size:16px;pointer-events:none;opacity:.65;
+  }
+  .login-card input{
+    text-align:center;
+    padding:13px 44px 13px 16px;
+    font-size:16px;
+    letter-spacing:2px;
+    border-radius:11px;
+    border:1.5px solid var(--line);
+    background:#f8faf9;
+  }
+  .login-card input:focus{
+    box-shadow:0 0 0 4px rgba(14,110,99,.12);
+  }
+  .login-card .btn-primary{
+    width:100%;padding:13px;font-size:15px;border-radius:11px;
+    box-shadow:0 8px 16px rgba(10,79,71,.22);
+    margin-top:4px;
+  }
+  .login-card .btn-primary:hover{transform:translateY(-1px);box-shadow:0 10px 20px rgba(10,79,71,.28);}
+  .login-error{
+    color:var(--danger);font-size:13px;min-height:20px;margin-bottom:4px;font-weight:600;
+  }
+  .login-error.shake{animation:shake .4s ease;}
+  @keyframes shake{
+    0%,100%{transform:translateX(0);}
+    25%{transform:translateX(-6px);}
+    75%{transform:translateX(6px);}
+  }
+  .hint{
+    margin-top:18px;font-size:12px;color:var(--ink-soft);
+    background:#f4f8f7;border:1px dashed var(--line);
+    border-radius:9px;padding:10px 12px;line-height:1.7;
+  }
+  .hint b{color:var(--teal-deep);}
+
+  /* Settings page */
+  .settings-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:22px 20px;
+    display:flex;flex-direction:column;gap:16px;
+    box-shadow:0 2px 10px rgba(16,48,44,.05);
+  }
+  .settings-card .settings-section-title{
+    font-family:'Tajawal',sans-serif;font-weight:700;font-size:13px;
+    color:var(--teal-deep);
+    display:flex;align-items:center;gap:6px;
+    padding-bottom:8px;border-bottom:1px solid var(--line);
+    margin-bottom:2px;
+  }
+  .settings-card .field-label span{display:flex;align-items:center;gap:6px;}
+  .settings-card input{border-radius:10px;padding:12px 14px;}
+  .settings-card input:focus{box-shadow:0 0 0 4px rgba(14,110,99,.10);}
+  .settings-msg{
+    font-size:13px;min-height:20px;font-weight:600;
+    display:flex;align-items:center;gap:6px;
+    border-radius:8px;padding:0;
+  }
+  .settings-msg.ok{color:var(--teal-deep);}
+  .settings-msg.err{color:var(--danger);}
+  .settings-card .btn-primary{border-radius:10px;padding:13px;box-shadow:0 6px 14px rgba(10,79,71,.18);}
+  .settings-card .btn-ghost{border-radius:10px;padding:12px;}
+
+  /* Inventory & comparison */
+  .search-input{margin-bottom:4px;}
+  .best-month-card{
+    background:linear-gradient(135deg,#c8862b,#a8691c);
+    border-radius:14px;
+    padding:16px;
+    color:#fff;
+    display:flex;flex-direction:column;gap:4px;
+    margin-bottom:16px;
+  }
+  .best-month-card .trophy{font-size:22px;}
+  .best-month-card .m-name{font-family:'Tajawal',sans-serif;font-weight:900;font-size:17px;}
+  .best-month-card .m-val{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:20px;}
+
+  .compare-row{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 14px;
+    margin-bottom:10px;
+  }
+  .compare-row .cr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .compare-row .cr-name{font-family:'Tajawal',sans-serif;font-weight:700;font-size:14px;color:var(--ink);}
+  .compare-row .cr-val{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--teal-deep);}
+  .compare-bar-track{background:#e7eeec;border-radius:6px;height:10px;overflow:hidden;}
+  .compare-bar-fill{background:linear-gradient(90deg,var(--teal),var(--teal-deep));height:100%;border-radius:6px;transition:width .3s ease;}
+
+  /* Print styling: hides navigation/buttons so only page content prints */
+  @media print{
+    .tabs, .toolbar, .btn-primary, .btn-ghost,
+    .edit-col, .remove-col, .row-remove, .add-col-tile,
+    .topbar, .sidebar, .sidebar-overlay{display:none !important;}
+    body{background:#fff;padding:0;}
+    .card, .summary-box, .summary-total, .summary-readout{box-shadow:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="lock-icon">🔒</div>
+    <h2>تسجيل الدخول</h2>
+    <p>اكتب الرقم السري عشان تدخل على البيانات بتاعتك</p>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-field">
+      <input type="password" id="loginPasswordInput" placeholder="الرقم السري" onkeydown="if(event.key==='Enter') tryLogin()">
+      <span class="field-icon">🔑</span>
+    </div>
+    <button class="btn-primary" style="width:100%;" onclick="tryLogin()">دخول</button>
+    <div class="hint">الرقم السري الافتراضي: <b>1234</b> — وتقدر تغيّره من صفحة "الإعدادات" بعد الدخول.</div>
+  </div>
+</div>
+
+<div id="appScreen" style="display:none;">
+
+  <div class="topbar">
+    <button class="hamburger-btn" onclick="toggleSidebar()">☰</button>
+    <span class="topbar-title">حاسبة تسعير المنتجات</span>
+  </div>
+
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h1>حاسبة تسعير المنتجات</h1>
+      <p class="sub">كل خانة تحت التانية — سجّل بياناتك بالترتيب والإجمالي يتحسب لوحده.</p>
+    </div>
+    <button class="side-tab-btn active" id="tabDashboardBtn" onclick="showPage('dashboard')"><span>📊</span> الداش بورد</button>
+    <button class="side-tab-btn" id="tabSuppliersBtn" onclick="showPage('suppliers')"><span>🚚</span> الموردين</button>
+    <button class="side-tab-btn" id="tabProductsBtn" onclick="showPage('products')"><span>📦</span> الأصناف</button>
+    <button class="side-tab-btn" id="tabSummaryBtn" onclick="showPage('summary')"><span>🧮</span> حاسبة نسبة الربح الإجمالية</button>
+    <button class="side-tab-btn" id="tabInventoryBtn" onclick="showPage('inventory')"><span>🗂️</span> الجرد</button>
+    <button class="side-tab-btn" id="tabCompareBtn" onclick="showPage('compare')"><span>📈</span> مقارنة الشهور</button>
+    <button class="side-tab-btn" id="tabNotesBtn" onclick="showPage('notes')"><span>📝</span> الملاحظات</button>
+    <button class="side-tab-btn" id="tabSettingsBtn" onclick="showPage('settings')"><span>⚙️</span> الإعدادات</button>
+  </nav>
+
+<div class="wrap">
+
+  <div class="page" id="pageProducts">
+    <div class="toolbar">
+      <button class="btn-primary" id="addRowBtn">+ إضافة صنف</button>
+      <button class="btn-ghost" id="addColBtn">+ إضافة خانة تكلفة</button>
+    </div>
+
+    <div class="cards" id="cardsWrap"></div>
+
+    <div class="footer-note">
+      <b>طريقة الحساب:</b> الإجمالي = (سعر المنتج + مجموع كل خانات التكلفة) × (1 + نسبة الربح ÷ 100).
+      <br>دوس على القلم ✎ جنب أي اسم خانة عشان تغيّره زي ما انت عايز.
+    </div>
+  </div>
+
+  <div class="page" id="pageSummary">
+    <div id="summaryCardsWrap"></div>
+
+    <div class="footer-note">
+      <b>طريقة الحساب هنا:</b> مثال — كيس تكلفته 70 جنيه، ونسبة ربحه 15%، يبقى ربح الوحدة = 70 × 15% = 10.50 جنيه، وسعر الوحدة بعد الربح = 80.50 جنيه.
+      <br>اكتب عدد القطع (الكمية)، والزيادة = الكمية × 10.50، والإجمالي = الكمية × 80.50.
+    </div>
+  </div>
+
+  <div class="page" id="pageSuppliers">
+    <div class="toolbar">
+      <button class="btn-primary" id="addSupplierBtn">+ إضافة مورد</button>
+    </div>
+
+    <div class="cards" id="suppliersWrap" style="margin-top:18px;"></div>
+
+    <div class="footer-note">
+      <b>طريقة الحساب هنا:</b> كل مورد له خانة لوحده. ضيف طلبياته (خامة، كمية، سعر، ملاحظات) وهيتحسب "المبلغ المستحق" تلقائي من مجموع (الكمية × السعر) لكل الطلبيات. اكتب اللي دفعته، والباقي = المستحق − المدفوع.
+    </div>
+  </div>
+
+  <div class="page active" id="pageDashboard">
+    <div class="summary-box" style="margin-top:6px;">
+      <div class="summary-readout">
+        <span class="lbl">إجمالي المكسب (من صفحة حاسبة نسبة الربح)</span>
+        <span class="val" id="dashTotalProfit">0</span>
+      </div>
+      <div class="summary-readout">
+        <span class="lbl">إجمالي السحوبات</span>
+        <span class="val" id="dashTotalWithdrawals">0</span>
+      </div>
+    </div>
+
+    <header style="margin-top:22px;">
+      <h1 style="font-size:19px;">السحوبات</h1>
+      <p class="sub">سجّل أي مبلغ سحبته من الشغل لنفسك أو لمصاريف شخصية.</p>
+      <div class="toolbar">
+        <button class="btn-primary" id="addWithdrawalBtn">+ إضافة سحب</button>
+      </div>
+    </header>
+
+    <div class="cards" id="withdrawalsWrap" style="margin-top:16px;"></div>
+
+    <header style="margin-top:26px;">
+      <h1 style="font-size:19px;">ملخص الموردين</h1>
+    </header>
+    <div class="summary-box">
+      <div class="summary-readout">
+        <span class="lbl">إجمالي المستحق لكل الموردين</span>
+        <span class="val" id="dashSuppliersOwed">0</span>
+      </div>
+      <div class="summary-readout">
+        <span class="lbl">إجمالي المدفوع لكل الموردين</span>
+        <span class="val" id="dashSuppliersPaid">0</span>
+      </div>
+      <div class="summary-total">
+        <span class="lbl">إجمالي الباقي لكل الموردين</span>
+        <span class="val" id="dashSuppliersRemaining">0</span>
+      </div>
+    </div>
+
+    <div class="summary-total" style="margin-top:22px;">
+      <span class="lbl">الإجمالي الأرباح</span>
+      <span class="val" id="dashNetProfit">0</span>
+    </div>
+
+    <div class="footer-note">
+      <b>طريقة الحساب هنا:</b> الإجمالي الأرباح = إجمالي المكسب − إجمالي السحوبات − إجمالي الباقي لكل الموردين. يعني الفلوس اللي لسه بتستاهلها فعلًا بعد ما تاخد بالك من اللي سحبته واللي لسه عليك للموردين.
+    </div>
+  </div>
+
+  <div class="page" id="pageInventory">
+    <header>
+      <h1 style="font-size:19px;">الجرد الشهري</h1>
+      <p class="sub">سجّل نتائج كل شهر عشان تقدر ترجع لها وتطبعها وقت ما تحب.</p>
+      <div class="toolbar">
+        <button class="btn-primary" id="addInventoryBtn">+ تسجيل جرد شهر جديد</button>
+        <button class="btn-ghost" onclick="printPage()">🖨 طباعة PDF</button>
+      </div>
+    </header>
+
+    <div class="cards" id="inventoryWrap" style="margin-top:18px;"></div>
+
+    <div class="footer-note">
+      <b>طريقة الحساب هنا:</b> لما تدوس "تسجيل جرد شهر جديد"، الأرقام بتتسحب تلقائي من الداش بورد في اللحظة دي (المكسب، السحوبات، المستحق للموردين، الإجمالي الأرباح)، وبتتحفظ باسم الشهر اللي تكتبه. زرار الطباعة بيفتحلك نافذة الطباعة عشان تحفظه PDF.
+    </div>
+  </div>
+
+  <div class="page" id="pageCompare">
+    <header>
+      <h1 style="font-size:19px;">مقارنة الشهور</h1>
+      <p class="sub">شوف أكتر شهر حقق ربح، ودوّر بين كل الشهور اللي سجلتها.</p>
+    </header>
+
+    <div id="bestMonthWrap"></div>
+
+    <input type="text" class="search-input" id="monthSearchInput" placeholder="🔍 دوّر باسم الشهر..." oninput="renderCompare()">
+
+    <div id="compareWrap" style="margin-top:12px;"></div>
+
+    <div class="footer-note">
+      <b>ملاحظة:</b> المقارنة بتاخد بيانات الشهور اللي سجلتها من صفحة "الجرد". سجّل جرد كل شهر عشان تقدر تقارن بينهم هنا.
+    </div>
+  </div>
+
+  <div class="page" id="pageNotes">
+    <header>
+      <h1 style="font-size:19px;">الملاحظات</h1>
+      <p class="sub">دوّن أي فكرة أو تذكير بسرعة، زي جوجل كيب.</p>
+    </header>
+
+    <div class="notes-add-box">
+      <textarea id="newNoteInput" placeholder="اكتب ملاحظة جديدة..." rows="2" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); addNote();}"></textarea>
+    </div>
+
+    <div class="notes-grid" id="notesWrap"></div>
+  </div>
+
+  <div class="page" id="pageSettings">
+    <header>
+      <h1 style="font-size:19px;">الإعدادات</h1>
+      <p class="sub">تقدر تغيّر الرقم السري بتاع الدخول من هنا.</p>
+    </header>
+
+    <div class="settings-card">
+      <div class="settings-section-title">🔐 تغيير الرقم السري</div>
+      <div class="field">
+        <div class="field-label"><span>🔑 الرقم السري الحالي</span></div>
+        <input type="password" id="settingsCurrentPassword" placeholder="اكتب الرقم السري الحالي">
+      </div>
+      <div class="field">
+        <div class="field-label"><span>🆕 الرقم السري الجديد</span></div>
+        <input type="password" id="settingsNewPassword" placeholder="اكتب الرقم السري الجديد">
+      </div>
+      <div class="field">
+        <div class="field-label"><span>✅ تأكيد الرقم السري الجديد</span></div>
+        <input type="password" id="settingsConfirmPassword" placeholder="اكتب نفس الرقم الجديد تاني">
+      </div>
+      <div class="settings-msg" id="settingsMsg"></div>
+      <button class="btn-primary" onclick="changePassword()">💾 حفظ الرقم السري الجديد</button>
+      <button class="btn-ghost" onclick="logout()">🚪 تسجيل الخروج</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="modal-overlay" id="monthPickerModal">
+  <div class="modal-card">
+    <h3>📅 اختار الشهر والسنة</h3>
+    <select id="monthPickerMonth">
+      <option value="يناير">يناير</option>
+      <option value="فبراير">فبراير</option>
+      <option value="مارس">مارس</option>
+      <option value="أبريل">أبريل</option>
+      <option value="مايو">مايو</option>
+      <option value="يونيو">يونيو</option>
+      <option value="يوليو">يوليو</option>
+      <option value="أغسطس">أغسطس</option>
+      <option value="سبتمبر">سبتمبر</option>
+      <option value="أكتوبر">أكتوبر</option>
+      <option value="نوفمبر">نوفمبر</option>
+      <option value="ديسمبر">ديسمبر</option>
+    </select>
+    <select id="monthPickerYear"></select>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeMonthPicker()">إلغاء</button>
+      <button class="btn-primary" onclick="confirmMonthPick()">تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let APP_PASSWORD = '1234';
+
+async function loadPassword(){
+  try{
+    const res = await window.storage.get('app_password', false);
+    if(res && res.value) APP_PASSWORD = res.value;
+  }catch(e){
+    // no saved password yet — keep the default
+  }
+}
+
+async function savePassword(newPass){
+  APP_PASSWORD = newPass;
+  try{
+    await window.storage.set('app_password', newPass, false);
+  }catch(e){
+    console.error('تعذر حفظ الرقم السري', e);
+  }
+}
+
+function tryLogin(){
+  const input = document.getElementById('loginPasswordInput');
+  const errorEl = document.getElementById('loginError');
+  if(input.value === APP_PASSWORD){
+    errorEl.textContent = '';
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appScreen').style.display = 'block';
+  } else {
+    errorEl.textContent = '❌ الرقم السري غلط، جرب تاني.';
+    errorEl.classList.remove('shake');
+    void errorEl.offsetWidth;
+    errorEl.classList.add('shake');
+    input.value = '';
+    input.focus();
+  }
+}
+
+function logout(){
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginPasswordInput').value = '';
+  document.getElementById('loginError').textContent = '';
+}
+
+async function changePassword(){
+  const current = document.getElementById('settingsCurrentPassword').value;
+  const next = document.getElementById('settingsNewPassword').value;
+  const confirm = document.getElementById('settingsConfirmPassword').value;
+  const msgEl = document.getElementById('settingsMsg');
+
+  if(current !== APP_PASSWORD){
+    msgEl.textContent = '❌ الرقم السري الحالي مش مظبوط.';
+    msgEl.className = 'settings-msg err';
+    return;
+  }
+  if(!next || next.length < 3){
+    msgEl.textContent = '❌ اكتب رقم سري جديد (3 خانات على الأقل).';
+    msgEl.className = 'settings-msg err';
+    return;
+  }
+  if(next !== confirm){
+    msgEl.textContent = '❌ الرقم الجديد وتأكيده مش متطابقين.';
+    msgEl.className = 'settings-msg err';
+    return;
+  }
+
+  await savePassword(next);
+  msgEl.textContent = '✅ تم تغيير الرقم السري بنجاح';
+  msgEl.className = 'settings-msg ok';
+  document.getElementById('settingsCurrentPassword').value = '';
+  document.getElementById('settingsNewPassword').value = '';
+  document.getElementById('settingsConfirmPassword').value = '';
+}
+</script>
+
+<script>
+let dynCols = []; // {id, name}
+let rows = [];    // {id, name, price, note, values:{colId:num}, profit}
+let colCounter = 0;
+let rowCounter = 0;
+let colLabels = {
+  name: 'اسم المنتج',
+  price: 'سعر المنتج',
+  note: 'ملاحظات',
+  profit: 'نسبة الربح %',
+  total: 'الإجمالي'
+};
+
+function renameLabel(key){
+  const current = colLabels[key];
+  const name = prompt('غيّر اسم الخانة:', current);
+  if(name === null) return;
+  colLabels[key] = name.trim() || current;
+  render();
+}
+
+function renameColumn(id){
+  const col = dynCols.find(c => c.id === id);
+  if(!col) return;
+  const name = prompt('غيّر اسم الخانة:', col.name);
+  if(name === null) return;
+  col.name = name.trim() || col.name;
+  render();
+}
+
+function addColumn(){
+  colCounter++;
+  const id = 'c' + colCounter;
+  const name = prompt('اسم خانة التكلفة الجديدة (مثال: سعر الخامة، الشحن):', 'تكلفة ' + (dynCols.length+1));
+  if(name === null) return;
+  dynCols.push({id, name: name.trim() || ('تكلفة ' + (dynCols.length+1))});
+  rows.forEach(r => r.values[id] = 0);
+  render();
+}
+
+function removeColumn(id){
+  dynCols = dynCols.filter(c => c.id !== id);
+  rows.forEach(r => delete r.values[id]);
+  render();
+}
+
+// ---------- Suppliers ----------
+let suppliers = []; // {id, name, paid, orders:[{id, material, qty, price, note}]}
+let supplierCounter = 0;
+let supplierOrderCounter = 0;
+
+function addSupplier(){
+  supplierCounter++;
+  const id = 's' + supplierCounter;
+  suppliers.push({id, name:'', paid:0, orders:[]});
+  renderSuppliers();
+}
+
+function removeSupplier(id){
+  suppliers = suppliers.filter(s => s.id !== id);
+  renderSuppliers();
+}
+
+function updateSupplier(id, field, value){
+  const sup = suppliers.find(s => s.id === id);
+  if(!sup) return;
+  sup[field] = (field === 'paid') ? Number(value) : value;
+  if(field === 'paid') updateSupplierTotals(id);
+  // name field: no re-render needed, so the keyboard never closes while typing
+}
+
+function addSupplierOrder(supplierId){
+  const sup = suppliers.find(s => s.id === supplierId);
+  if(!sup) return;
+  supplierOrderCounter++;
+  sup.orders.push({id:'o'+supplierOrderCounter, material:'', qty:0, price:0, note:''});
+  renderSuppliers();
+}
+
+function removeSupplierOrder(supplierId, orderId){
+  const sup = suppliers.find(s => s.id === supplierId);
+  if(!sup) return;
+  sup.orders = sup.orders.filter(o => o.id !== orderId);
+  renderSuppliers();
+}
+
+function updateSupplierOrder(supplierId, orderId, field, value){
+  const sup = suppliers.find(s => s.id === supplierId);
+  if(!sup) return;
+  const order = sup.orders.find(o => o.id === orderId);
+  if(!order) return;
+  order[field] = (field === 'qty' || field === 'price') ? Number(value) : value;
+  if(field === 'qty' || field === 'price') updateSupplierTotals(supplierId);
+  // material/note fields: no re-render needed, so the keyboard never closes while typing
+}
+
+function supplierOwed(sup){
+  return sup.orders.reduce((acc,o) => acc + ((Number(o.qty)||0) * (Number(o.price)||0)), 0);
+}
+
+function updateSupplierTotals(supplierId){
+  const sup = suppliers.find(s => s.id === supplierId);
+  if(!sup) return;
+  const owed = supplierOwed(sup);
+  const paid = Number(sup.paid) || 0;
+  const remaining = owed - paid;
+
+  const owedEl = document.getElementById('owed_' + supplierId);
+  const remainingEl = document.getElementById('remaining_' + supplierId);
+  const remainingBox = document.getElementById('remainingBox_' + supplierId);
+  if(owedEl) owedEl.textContent = formatNum(owed);
+  if(remainingEl) remainingEl.textContent = formatNum(remaining);
+  if(remainingBox){
+    remainingBox.style.background = remaining > 0 ? '' : 'linear-gradient(135deg,#2f7d5a,#1f5c40)';
+  }
+}
+
+function renderSuppliers(){
+  const wrap = document.getElementById('suppliersWrap');
+  if(suppliers.length === 0){
+    wrap.innerHTML = `<div class="empty-state">لسه مفيش موردين — دوس "إضافة مورد" تبدأ.</div>`;
+    return;
+  }
+
+  wrap.innerHTML = suppliers.map((sup, idx) => {
+    const owed = supplierOwed(sup);
+    const paid = Number(sup.paid) || 0;
+    const remaining = owed - paid;
+    return `
+      <div class="card">
+        <div class="card-head">
+          <span class="badge">مورد ${idx+1}</span>
+          <button class="row-remove" onclick="removeSupplier('${sup.id}')" title="حذف المورد">🗑 حذف المورد</button>
+        </div>
+        <div class="card-body">
+
+          <div class="field">
+            <div class="field-label"><span>اسم المورد</span></div>
+            <input type="text" value="${escapeAttr(sup.name)}" placeholder="اسم المورد" oninput="updateSupplier('${sup.id}','name',this.value)">
+          </div>
+
+          ${sup.orders.map(o => `
+            <div class="card" style="background:#f8faf9;">
+              <div class="card-head" style="background:#f0f5f4;">
+                <span class="badge" style="background:#e2efec;color:var(--teal-deep);">طلبية</span>
+                <button class="row-remove" onclick="removeSupplierOrder('${sup.id}','${o.id}')" title="حذف الطلبية">🗑</button>
+              </div>
+              <div class="card-body">
+                <div class="field">
+                  <div class="field-label"><span>الخامة</span></div>
+                  <input type="text" value="${escapeAttr(o.material)}" placeholder="اسم الخامة" oninput="updateSupplierOrder('${sup.id}','${o.id}','material',this.value)">
+                </div>
+                <div class="field">
+                  <div class="field-label"><span>الكمية</span></div>
+                  <input type="number" step="any" value="${o.qty}" oninput="updateSupplierOrder('${sup.id}','${o.id}','qty',this.value)">
+                </div>
+                <div class="field">
+                  <div class="field-label"><span>السعر</span></div>
+                  <input type="number" step="any" value="${o.price}" oninput="updateSupplierOrder('${sup.id}','${o.id}','price',this.value)">
+                </div>
+                <div class="field">
+                  <div class="field-label"><span>ملاحظات</span></div>
+                  <input type="text" value="${escapeAttr(o.note)}" placeholder="ملاحظات" oninput="updateSupplierOrder('${sup.id}','${o.id}','note',this.value)">
+                </div>
+              </div>
+            </div>
+          `).join('')}
+
+          <div class="add-col-tile">
+            <button onclick="addSupplierOrder('${sup.id}')">+ إضافة طلبية جديدة لهذا المورد</button>
+          </div>
+
+          <div class="summary-readout">
+            <span class="lbl">المبلغ المستحق (مجموع الطلبيات)</span>
+            <span class="val" id="owed_${sup.id}">${formatNum(owed)}</span>
+          </div>
+
+          <div class="field">
+            <div class="field-label"><span>المدفوع</span></div>
+            <input type="number" step="any" value="${sup.paid}" oninput="updateSupplier('${sup.id}','paid',this.value)">
+          </div>
+
+          <div class="summary-total" id="remainingBox_${sup.id}" style="${remaining > 0 ? '' : 'background:linear-gradient(135deg,#2f7d5a,#1f5c40);'}">
+            <span class="lbl">الباقي</span>
+            <span class="val" id="remaining_${sup.id}">${formatNum(remaining)}</span>
+          </div>
+
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ---------- Monthly Inventory ----------
+let monthlyRecords = []; // {id, monthLabel, totalProfit, totalWithdrawals, suppliersRemaining, netProfit, note}
+let inventoryCounter = 0;
+
+function defaultMonthLabel(){
+  const now = new Date();
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  return {month: months[now.getMonth()], year: now.getFullYear()};
+}
+
+function populateMonthPickerYears(){
+  const yearSelect = document.getElementById('monthPickerYear');
+  if(yearSelect.options.length > 0) return; // already populated
+  const currentYear = new Date().getFullYear();
+  for(let y = currentYear - 5; y <= currentYear + 5; y++){
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    if(y === currentYear) opt.selected = true;
+    yearSelect.appendChild(opt);
+  }
+}
+
+function addInventory(){
+  populateMonthPickerYears();
+  const def = defaultMonthLabel();
+  document.getElementById('monthPickerMonth').value = def.month;
+  document.getElementById('monthPickerYear').value = def.year;
+  document.getElementById('monthPickerModal').classList.add('open');
+}
+
+function closeMonthPicker(){
+  document.getElementById('monthPickerModal').classList.remove('open');
+}
+
+function confirmMonthPick(){
+  const month = document.getElementById('monthPickerMonth').value;
+  const year = document.getElementById('monthPickerYear').value;
+  const label = month + ' ' + year;
+
+  const totalProfit = totalProfitFromSummary();
+  const totalWd = totalWithdrawals();
+  const suppliersOwed = suppliers.reduce((acc,s) => acc + supplierOwed(s), 0);
+  const suppliersPaid = suppliers.reduce((acc,s) => acc + (Number(s.paid)||0), 0);
+  const suppliersRemaining = suppliersOwed - suppliersPaid;
+  const netProfit = totalProfit - totalWd - suppliersRemaining;
+
+  inventoryCounter++;
+  monthlyRecords.push({
+    id: 'inv' + inventoryCounter,
+    monthLabel: label,
+    totalProfit, totalWithdrawals: totalWd, suppliersRemaining, netProfit,
+    note: ''
+  });
+  closeMonthPicker();
+  renderInventory();
+}
+
+function removeInventoryRecord(id){
+  monthlyRecords = monthlyRecords.filter(m => m.id !== id);
+  renderInventory();
+}
+
+function updateInventoryNote(id, value){
+  const rec = monthlyRecords.find(m => m.id === id);
+  if(!rec) return;
+  rec.note = value;
+  // no re-render needed, so the keyboard never closes while typing
+}
+
+function renderInventory(){
+  const wrap = document.getElementById('inventoryWrap');
+  if(monthlyRecords.length === 0){
+    wrap.innerHTML = `<div class="empty-state">لسه مفيش جرد مسجل — دوس "تسجيل جرد شهر جديد" تبدأ.</div>`;
+    return;
+  }
+  wrap.innerHTML = monthlyRecords.slice().reverse().map(rec => `
+    <div class="card">
+      <div class="card-head">
+        <span class="badge">${escapeHtml(rec.monthLabel)}</span>
+        <button class="row-remove" onclick="removeInventoryRecord('${rec.id}')" title="حذف الجرد">🗑</button>
+      </div>
+      <div class="card-body">
+        <div class="summary-readout">
+          <span class="lbl">إجمالي المكسب</span>
+          <span class="val">${formatNum(rec.totalProfit)}</span>
+        </div>
+        <div class="summary-readout">
+          <span class="lbl">إجمالي السحوبات</span>
+          <span class="val">${formatNum(rec.totalWithdrawals)}</span>
+        </div>
+        <div class="summary-readout">
+          <span class="lbl">الباقي للموردين</span>
+          <span class="val">${formatNum(rec.suppliersRemaining)}</span>
+        </div>
+        <div class="summary-total">
+          <span class="lbl">الإجمالي الأرباح</span>
+          <span class="val">${formatNum(rec.netProfit)}</span>
+        </div>
+        <div class="field">
+          <div class="field-label"><span>ملاحظات</span></div>
+          <input type="text" value="${escapeAttr(rec.note)}" placeholder="أي ملاحظة عن الشهر ده" oninput="updateInventoryNote('${rec.id}',this.value)">
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function printPage(){
+  window.print();
+}
+
+// ---------- Month comparison ----------
+function renderCompare(){
+  const bestWrap = document.getElementById('bestMonthWrap');
+  const listWrap = document.getElementById('compareWrap');
+
+  if(monthlyRecords.length === 0){
+    bestWrap.innerHTML = '';
+    listWrap.innerHTML = `<div class="empty-state">لسه مفيش شهور مسجلة في الجرد عشان نقارن بينها.</div>`;
+    return;
+  }
+
+  const bestMonth = monthlyRecords.reduce((best, m) => (m.netProfit > best.netProfit ? m : best), monthlyRecords[0]);
+  bestWrap.innerHTML = `
+    <div class="best-month-card">
+      <span class="trophy">🏆 أفضل شهر ربحية</span>
+      <span class="m-name">${escapeHtml(bestMonth.monthLabel)}</span>
+      <span class="m-val">${formatNum(bestMonth.netProfit)}</span>
+    </div>
+  `;
+
+  const query = (document.getElementById('monthSearchInput').value || '').trim();
+  const filtered = monthlyRecords.filter(m => m.monthLabel.includes(query));
+  const sorted = filtered.slice().sort((a,b) => b.netProfit - a.netProfit);
+  const maxVal = Math.max(1, ...sorted.map(m => Math.abs(m.netProfit)));
+
+  if(sorted.length === 0){
+    listWrap.innerHTML = `<div class="empty-state">مفيش شهور مطابقة للبحث.</div>`;
+    return;
+  }
+
+  listWrap.innerHTML = sorted.map((m, idx) => {
+    const widthPct = Math.max(4, (Math.abs(m.netProfit) / maxVal) * 100);
+    return `
+      <div class="compare-row">
+        <div class="cr-top">
+          <span class="cr-name">${idx===0 ? '🏆 ' : ''}${escapeHtml(m.monthLabel)}</span>
+          <span class="cr-val">${formatNum(m.netProfit)}</span>
+        </div>
+        <div class="compare-bar-track">
+          <div class="compare-bar-fill" style="width:${widthPct}%;"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ---------- Notes (Keep-style) ----------
+let notes = []; // {id, text, color}
+let noteCounter = 0;
+const NOTE_COLORS = ['#fff9c4','#c8e6c9','#b3e5fc','#f8bbd0','#d1c4e9','#ffe0b2','#dcedc8'];
+
+function addNote(){
+  const input = document.getElementById('newNoteInput');
+  const text = input.value.trim();
+  if(!text) return;
+  noteCounter++;
+  notes.unshift({id:'n'+noteCounter, text, color: NOTE_COLORS[noteCounter % NOTE_COLORS.length]});
+  input.value = '';
+  renderNotes();
+}
+
+function updateNoteText(id, value){
+  const note = notes.find(n => n.id === id);
+  if(!note) return;
+  note.text = value;
+  // no re-render needed, so the keyboard never closes while typing
+}
+
+function removeNote(id){
+  notes = notes.filter(n => n.id !== id);
+  renderNotes();
+}
+
+function renderNotes(){
+  const wrap = document.getElementById('notesWrap');
+  if(notes.length === 0){
+    wrap.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">لسه مفيش ملاحظات — اكتب أول ملاحظة في الخانة اللي فوق.</div>`;
+    return;
+  }
+  wrap.innerHTML = notes.map(n => `
+    <div class="note-card" style="background:${n.color};">
+      <textarea oninput="updateNoteText('${n.id}',this.value)">${escapeHtml(n.text)}</textarea>
+      <button class="note-del" onclick="removeNote('${n.id}')" title="حذف الملاحظة">🗑</button>
+    </div>
+  `).join('');
+}
+
+// ---------- Withdrawals ----------
+let withdrawals = []; // {id, amount, note}
+let withdrawalCounter = 0;
+
+function addWithdrawal(){
+  withdrawalCounter++;
+  withdrawals.push({id:'w'+withdrawalCounter, amount:0, note:''});
+  renderDashboard();
+}
+
+function removeWithdrawal(id){
+  withdrawals = withdrawals.filter(w => w.id !== id);
+  renderDashboard();
+}
+
+function updateWithdrawal(id, field, value){
+  const w = withdrawals.find(w => w.id === id);
+  if(!w) return;
+  w[field] = (field === 'amount') ? Number(value) : value;
+  updateDashboardTotals();
+  // note field: no re-render needed, so the keyboard never closes while typing
+}
+
+function totalProfitFromSummary(){
+  return rows.reduce((acc, r) => {
+    const {profitAmount} = getUnitBreakdown(r);
+    const qty = summaryInputs[r.id] || 0;
+    return acc + (qty * profitAmount);
+  }, 0);
+}
+
+function totalWithdrawals(){
+  return withdrawals.reduce((acc,w) => acc + (Number(w.amount)||0), 0);
+}
+
+function updateDashboardTotals(){
+  const totalProfit = totalProfitFromSummary();
+  const totalWd = totalWithdrawals();
+
+  const suppliersOwed = suppliers.reduce((acc,s) => acc + supplierOwed(s), 0);
+  const suppliersPaid = suppliers.reduce((acc,s) => acc + (Number(s.paid)||0), 0);
+  const suppliersRemaining = suppliersOwed - suppliersPaid;
+
+  const net = totalProfit - totalWd - suppliersRemaining;
+
+  document.getElementById('dashTotalProfit').textContent = formatNum(totalProfit);
+  document.getElementById('dashTotalWithdrawals').textContent = formatNum(totalWd);
+  document.getElementById('dashSuppliersOwed').textContent = formatNum(suppliersOwed);
+  document.getElementById('dashSuppliersPaid').textContent = formatNum(suppliersPaid);
+  document.getElementById('dashSuppliersRemaining').textContent = formatNum(suppliersRemaining);
+  document.getElementById('dashNetProfit').textContent = formatNum(net);
+}
+
+function renderDashboard(){
+  updateDashboardTotals();
+
+  const wrap = document.getElementById('withdrawalsWrap');
+  if(withdrawals.length === 0){
+    wrap.innerHTML = `<div class="empty-state">لسه مفيش سحوبات مسجلة.</div>`;
+    return;
+  }
+  wrap.innerHTML = withdrawals.map((w, idx) => `
+    <div class="card">
+      <div class="card-head">
+        <span class="badge">سحب ${idx+1}</span>
+        <button class="row-remove" onclick="removeWithdrawal('${w.id}')" title="حذف السحب">🗑</button>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <div class="field-label"><span>المبلغ</span></div>
+          <input type="number" step="any" value="${w.amount}" oninput="updateWithdrawal('${w.id}','amount',this.value)">
+        </div>
+        <div class="field">
+          <div class="field-label"><span>ملاحظات</span></div>
+          <input type="text" value="${escapeAttr(w.note)}" placeholder="سبب السحب" oninput="updateWithdrawal('${w.id}','note',this.value)">
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addRow(){
+  rowCounter++;
+  const id = 'r' + rowCounter;
+  const values = {};
+  dynCols.forEach(c => values[c.id] = 0);
+  rows.push({id, name:'', price:0, note:'', values, profit:0});
+  render();
+}
+
+function removeRow(id){
+  rows = rows.filter(r => r.id !== id);
+  render();
+}
+
+function calcTotal(row){
+  const dynSum = dynCols.reduce((acc,c) => acc + (Number(row.values[c.id]) || 0), 0);
+  const price = Number(row.price) || 0;
+  const sum = price + dynSum;
+  const profit = Number(row.profit) || 0;
+  return sum * (1 + profit/100);
+}
+
+function render(){
+  const wrap = document.getElementById('cardsWrap');
+
+  if(rows.length === 0){
+    wrap.innerHTML = `<div class="empty-state">لسه مفيش أصناف — دوس "إضافة صنف" تبدأ.</div>`;
+    return;
+  }
+
+  wrap.innerHTML = rows.map((r, idx) => `
+    <div class="card">
+      <div class="card-head">
+        <span class="badge">صنف ${idx+1}</span>
+        <button class="row-remove" onclick="removeRow('${r.id}')" title="حذف الصنف">🗑 حذف الصنف</button>
+      </div>
+      <div class="card-body">
+
+        <div class="field">
+          <div class="field-label">
+            <span>${escapeHtml(colLabels.name)}</span>
+            <div class="label-actions"><button class="edit-col" onclick="renameLabel('name')" title="تغيير الاسم">✎</button></div>
+          </div>
+          <input type="text" value="${escapeAttr(r.name)}" placeholder="${escapeAttr(colLabels.name)}" oninput="updateRow('${r.id}','name',this.value)">
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <span>${escapeHtml(colLabels.price)}</span>
+            <div class="label-actions"><button class="edit-col" onclick="renameLabel('price')" title="تغيير الاسم">✎</button></div>
+          </div>
+          <input type="number" step="any" value="${r.price ?? 0}" oninput="updatePrice('${r.id}',this.value)">
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <span>${escapeHtml(colLabels.note)}</span>
+            <div class="label-actions"><button class="edit-col" onclick="renameLabel('note')" title="تغيير الاسم">✎</button></div>
+          </div>
+          <input type="text" value="${escapeAttr(r.note)}" placeholder="${escapeAttr(colLabels.note)}" oninput="updateRow('${r.id}','note',this.value)">
+        </div>
+
+        ${dynCols.map(c => `
+          <div class="field">
+            <div class="field-label">
+              <span>${escapeHtml(c.name)}</span>
+              <div class="label-actions">
+                <button class="edit-col" onclick="renameColumn('${c.id}')" title="تغيير الاسم">✎</button>
+                <button class="remove-col" onclick="removeColumn('${c.id}')" title="حذف الخانة">×</button>
+              </div>
+            </div>
+            <input type="number" step="any" value="${r.values[c.id] ?? 0}" oninput="updateValue('${r.id}','${c.id}',this.value)">
+          </div>
+        `).join('')}
+
+        <div class="field profit">
+          <div class="field-label">
+            <span>${escapeHtml(colLabels.profit)}</span>
+            <div class="label-actions"><button class="edit-col" onclick="renameLabel('profit')" title="تغيير الاسم">✎</button></div>
+          </div>
+          <input type="number" step="any" value="${r.profit}" oninput="updateRow('${r.id}','profit',this.value)">
+        </div>
+
+        <div class="total-field">
+          <div class="field-label">
+            <span>${escapeHtml(colLabels.total)}</span>
+            <div class="label-actions"><button class="edit-col" onclick="renameLabel('total')" title="تغيير الاسم">✎</button></div>
+          </div>
+          <span class="total-value" id="total_${r.id}">${formatNum(calcTotal(r))}</span>
+        </div>
+
+      </div>
+    </div>
+  `).join('') + `
+    <div class="add-col-tile">
+      <button onclick="addColumn()">+ إضافة خانة تكلفة جديدة لكل الأصناف</button>
+    </div>
+  `;
+}
+
+let summaryInputs = {}; // rowId -> number entered by user for that product's table
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
+function showPage(page){
+  document.getElementById('pageProducts').classList.toggle('active', page === 'products');
+  document.getElementById('pageSummary').classList.toggle('active', page === 'summary');
+  document.getElementById('pageSuppliers').classList.toggle('active', page === 'suppliers');
+  document.getElementById('pageDashboard').classList.toggle('active', page === 'dashboard');
+  document.getElementById('pageInventory').classList.toggle('active', page === 'inventory');
+  document.getElementById('pageCompare').classList.toggle('active', page === 'compare');
+  document.getElementById('pageNotes').classList.toggle('active', page === 'notes');
+  document.getElementById('pageSettings').classList.toggle('active', page === 'settings');
+  document.getElementById('tabProductsBtn').classList.toggle('active', page === 'products');
+  document.getElementById('tabSummaryBtn').classList.toggle('active', page === 'summary');
+  document.getElementById('tabSuppliersBtn').classList.toggle('active', page === 'suppliers');
+  document.getElementById('tabDashboardBtn').classList.toggle('active', page === 'dashboard');
+  document.getElementById('tabInventoryBtn').classList.toggle('active', page === 'inventory');
+  document.getElementById('tabCompareBtn').classList.toggle('active', page === 'compare');
+  document.getElementById('tabNotesBtn').classList.toggle('active', page === 'notes');
+  document.getElementById('tabSettingsBtn').classList.toggle('active', page === 'settings');
+  if(page === 'summary') renderSummary();
+  if(page === 'suppliers') renderSuppliers();
+  if(page === 'dashboard') renderDashboard();
+  if(page === 'inventory') renderInventory();
+  if(page === 'compare') renderCompare();
+  if(page === 'notes') renderNotes();
+  closeSidebar();
+}
+
+function getUnitBreakdown(row){
+  const dynSum = dynCols.reduce((acc,c) => acc + (Number(row.values[c.id]) || 0), 0);
+  const price = Number(row.price) || 0;
+  const costSum = price + dynSum;
+  const profitPct = Number(row.profit) || 0;
+  const profitAmount = costSum * (profitPct/100); // e.g. 70 * 15% = 10.5
+  const unitTotal = costSum + profitAmount;        // e.g. 80.5
+  return {costSum, profitPct, profitAmount, unitTotal};
+}
+
+function updateSummaryInput(rowId, value){
+  summaryInputs[rowId] = Number(value) || 0;
+  renderSummaryCard(rowId);
+}
+
+function renderSummaryCard(rowId){
+  const row = rows.find(r => r.id === rowId);
+  if(!row) return;
+  const {profitAmount, unitTotal} = getUnitBreakdown(row);
+  const qty = summaryInputs[rowId] || 0;
+  const increase = qty * profitAmount;   // إجمالي الربح للكمية دي
+  const total = qty * unitTotal;         // إجمالي البيع للكمية دي
+
+  const incEl = document.getElementById('sIncrease_' + rowId);
+  const totEl = document.getElementById('sTotal_' + rowId);
+  if(incEl) incEl.textContent = formatNum(increase);
+  if(totEl) totEl.textContent = formatNum(total);
+  [incEl, totEl].forEach(el => {
+    if(!el) return;
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  });
+}
+
+function renderSummary(){
+  const wrap = document.getElementById('summaryCardsWrap');
+  if(rows.length === 0){
+    wrap.innerHTML = `<div class="empty-state">لسه مفيش أصناف — ضيف صنف من صفحة "الأصناف" الأول.</div>`;
+    return;
+  }
+  wrap.innerHTML = rows.map((r, idx) => {
+    const {profitAmount, unitTotal} = getUnitBreakdown(r);
+    const qty = summaryInputs[r.id] || 0;
+    const increase = qty * profitAmount;
+    const total = qty * unitTotal;
+    return `
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-head">
+          <span class="badge">${escapeHtml(r.name) || ('صنف ' + (idx+1))}</span>
+          <span class="badge" style="background:#e2efec;color:var(--teal-deep);">ربح الوحدة: ${formatNum(profitAmount)}</span>
+        </div>
+        <div class="card-body">
+          <div class="field">
+            <div class="field-label"><span>العدد (الكمية)</span></div>
+            <input type="number" step="any" value="${qty}" oninput="updateSummaryInput('${r.id}',this.value)">
+          </div>
+          <div class="summary-readout">
+            <span class="lbl">الزيادة (الكمية × ربح الوحدة)</span>
+            <span class="val" id="sIncrease_${r.id}">${formatNum(increase)}</span>
+          </div>
+          <div class="summary-total">
+            <span class="lbl">الإجمالي (الكمية × سعر الوحدة بعد الربح)</span>
+            <span class="val" id="sTotal_${r.id}">${formatNum(total)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateRow(id, field, value){
+  const row = rows.find(r => r.id === id);
+  if(!row) return;
+  row[field] = (field === 'profit') ? Number(value) : value;
+  if(field === 'profit'){
+    flashTotal(id, row);
+  }
+}
+
+function updatePrice(rowId, value){
+  const row = rows.find(r => r.id === rowId);
+  if(!row) return;
+  row.price = Number(value);
+  flashTotal(rowId, row);
+}
+
+function updateValue(rowId, colId, value){
+  const row = rows.find(r => r.id === rowId);
+  if(!row) return;
+  row.values[colId] = Number(value);
+  flashTotal(rowId, row);
+}
+
+function flashTotal(rowId, row){
+  const el = document.getElementById('total_' + rowId);
+  if(!el) return;
+  el.textContent = formatNum(calcTotal(row));
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
+}
+
+function formatNum(n){
+  return n.toLocaleString('ar-EG', {maximumFractionDigits:2});
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
+
+document.getElementById('addColBtn').addEventListener('click', addColumn);
+document.getElementById('addRowBtn').addEventListener('click', addRow);
+document.getElementById('addSupplierBtn').addEventListener('click', addSupplier);
+document.getElementById('addWithdrawalBtn').addEventListener('click', addWithdrawal);
+document.getElementById('addInventoryBtn').addEventListener('click', addInventory);
+
+loadPassword();
+
+// start with one sample row
+addRow();
+renderDashboard();
+</script>
+</body>
+</html>
