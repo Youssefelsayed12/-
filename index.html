@@ -304,6 +304,28 @@
   }
   .note-del:hover{background:rgba(0,0,0,.08);color:rgba(0,0,0,.7);}
 
+  /* Salaries paid toggle */
+  .paid-toggle{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;padding:12px;border-radius:9px;
+    border:1.5px solid var(--line);background:#f8faf9;
+    font-family:'Tajawal',sans-serif;font-weight:700;font-size:14px;
+    color:var(--ink-soft);
+  }
+  .paid-toggle .circle{
+    width:22px;height:22px;border-radius:50%;
+    border:2px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;color:transparent;
+  }
+  .paid-toggle.paid{
+    background:linear-gradient(135deg,#0e6e63,#0a4f47);
+    border-color:var(--teal-deep);color:#fff;
+  }
+  .paid-toggle.paid .circle{
+    background:#fff;border-color:#fff;color:var(--teal-deep);
+  }
+
   .page{display:none;}
   .page.active{display:block;}
 
@@ -515,6 +537,8 @@
     <button class="side-tab-btn" id="tabSuppliersBtn" onclick="showPage('suppliers')"><span>🚚</span> الموردين</button>
     <button class="side-tab-btn" id="tabProductsBtn" onclick="showPage('products')"><span>📦</span> الأصناف</button>
     <button class="side-tab-btn" id="tabSummaryBtn" onclick="showPage('summary')"><span>🧮</span> حاسبة نسبة الربح الإجمالية</button>
+    <button class="side-tab-btn" id="tabRevenueBtn" onclick="showPage('revenue')"><span>🛵</span> الإيرادات والمشتريات</button>
+    <button class="side-tab-btn" id="tabSalariesBtn" onclick="showPage('salaries')"><span>💰</span> المرتبات</button>
     <button class="side-tab-btn" id="tabInventoryBtn" onclick="showPage('inventory')"><span>🗂️</span> الجرد</button>
     <button class="side-tab-btn" id="tabCompareBtn" onclick="showPage('compare')"><span>📈</span> مقارنة الشهور</button>
     <button class="side-tab-btn" id="tabNotesBtn" onclick="showPage('notes')"><span>📝</span> الملاحظات</button>
@@ -554,7 +578,7 @@
     <div class="cards" id="suppliersWrap" style="margin-top:18px;"></div>
 
     <div class="footer-note">
-      <b>طريقة الحساب هنا:</b> كل مورد له خانة لوحده. ضيف طلبياته (خامة، كمية، سعر، ملاحظات) وهيتحسب "المبلغ المستحق" تلقائي من مجموع (الكمية × السعر) لكل الطلبيات. اكتب اللي دفعته، والباقي = المستحق − المدفوع.
+      <b>طريقة الحساب هنا:</b> كل مورد له خانة لوحده. ضيف طلبياته (خامة، كمية، سعر، ملاحظات) وهيتحسب "الإجمالي" تلقائي من مجموع (الكمية × السعر) لكل الطلبيات، وده بيتخصم مباشرة من إجمالي الأرباح في الداش بورد — من غير ما تحتاج تسجل مدفوع أو باقي.
     </div>
   </div>
 
@@ -565,36 +589,26 @@
         <span class="val" id="dashTotalProfit">0</span>
       </div>
       <div class="summary-readout">
-        <span class="lbl">إجمالي السحوبات</span>
-        <span class="val" id="dashTotalWithdrawals">0</span>
+        <span class="lbl">إجمالي الإيرادات (طلبات + فاست + eat yummy)</span>
+        <span class="val" id="dashTotalRevenue">0</span>
+      </div>
+      <div class="summary-readout">
+        <span class="lbl">إجمالي المشتريات (بالسالب)</span>
+        <span class="val" id="dashTotalPurchases">0</span>
+      </div>
+      <div class="summary-readout">
+        <span class="lbl">إجمالي المرتبات المدفوعة (بالسالب)</span>
+        <span class="val" id="dashTotalSalariesPaid">0</span>
       </div>
     </div>
 
     <header style="margin-top:22px;">
-      <h1 style="font-size:19px;">السحوبات</h1>
-      <p class="sub">سجّل أي مبلغ سحبته من الشغل لنفسك أو لمصاريف شخصية.</p>
-      <div class="toolbar">
-        <button class="btn-primary" id="addWithdrawalBtn">+ إضافة سحب</button>
-      </div>
-    </header>
-
-    <div class="cards" id="withdrawalsWrap" style="margin-top:16px;"></div>
-
-    <header style="margin-top:26px;">
       <h1 style="font-size:19px;">ملخص الموردين</h1>
     </header>
     <div class="summary-box">
-      <div class="summary-readout">
-        <span class="lbl">إجمالي المستحق لكل الموردين</span>
-        <span class="val" id="dashSuppliersOwed">0</span>
-      </div>
-      <div class="summary-readout">
-        <span class="lbl">إجمالي المدفوع لكل الموردين</span>
-        <span class="val" id="dashSuppliersPaid">0</span>
-      </div>
       <div class="summary-total">
-        <span class="lbl">إجمالي الباقي لكل الموردين</span>
-        <span class="val" id="dashSuppliersRemaining">0</span>
+        <span class="lbl">إجمالي طلبيات الموردين (بيتخصم مباشرة)</span>
+        <span class="val" id="dashSuppliersOwed">0</span>
       </div>
     </div>
 
@@ -604,16 +618,16 @@
     </div>
 
     <div class="footer-note">
-      <b>طريقة الحساب هنا:</b> الإجمالي الأرباح = إجمالي المكسب − إجمالي السحوبات − إجمالي الباقي لكل الموردين. يعني الفلوس اللي لسه بتستاهلها فعلًا بعد ما تاخد بالك من اللي سحبته واللي لسه عليك للموردين.
+      <b>طريقة الحساب هنا:</b> الإجمالي الأرباح = إجمالي المكسب + إجمالي الإيرادات − إجمالي المشتريات − إجمالي المرتبات المدفوعة − إجمالي طلبيات الموردين.
     </div>
   </div>
 
   <div class="page" id="pageInventory">
     <header>
       <h1 style="font-size:19px;">الجرد الشهري</h1>
-      <p class="sub">سجّل نتائج كل شهر عشان تقدر ترجع لها وتطبعها وقت ما تحب.</p>
+      <p class="sub">قفل حساب كل شهر عشان تقدر ترجع له وتطبعه وقت ما تحب.</p>
       <div class="toolbar">
-        <button class="btn-primary" id="addInventoryBtn">+ تسجيل جرد شهر جديد</button>
+        <button class="btn-primary" style="background:linear-gradient(135deg,#b5452f,#8a3322);" id="addInventoryBtn">🔒 تقفيل الحساب</button>
         <button class="btn-ghost" onclick="printPage()">🖨 طباعة PDF</button>
       </div>
     </header>
@@ -621,7 +635,7 @@
     <div class="cards" id="inventoryWrap" style="margin-top:18px;"></div>
 
     <div class="footer-note">
-      <b>طريقة الحساب هنا:</b> لما تدوس "تسجيل جرد شهر جديد"، الأرقام بتتسحب تلقائي من الداش بورد في اللحظة دي (المكسب، السحوبات، المستحق للموردين، الإجمالي الأرباح)، وبتتحفظ باسم الشهر اللي تكتبه. زرار الطباعة بيفتحلك نافذة الطباعة عشان تحفظه PDF.
+      <b>طريقة الحساب هنا:</b> لما تدوس "تقفيل الحساب"، الأرقام الحالية (المكسب، الإيرادات، المشتريات، المرتبات المدفوعة، طلبيات الموردين، الإجمالي الأرباح) بتتحفظ باسم الشهر اللي تختاره، وبعدين كل الأرقام بترجع لبداية جديدة فاضية. السجل ده بيفضل ثابت ومحفوظ، ومينفعش يتعدل أو يتمسح.
     </div>
   </div>
 
@@ -653,6 +667,65 @@
     </div>
 
     <div class="notes-grid" id="notesWrap"></div>
+  </div>
+
+  <div class="page" id="pageRevenue">
+    <header>
+      <h1 style="font-size:19px;">الإيرادات والمشتريات</h1>
+      <p class="sub">سجّل إيراد كل يوم لكل منصة توصيل، والمشتريات اللي بتحب تتابعها.</p>
+    </header>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head">
+        <span class="badge">🛵 طلبات</span>
+        <button class="btn-primary" style="padding:6px 14px;font-size:13px;" onclick="addPlatformEntry('talabat')">+ إضافة إيراد اليوم</button>
+      </div>
+      <div class="card-body" id="platformWrap_talabat"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head">
+        <span class="badge">🚀 فاست</span>
+        <button class="btn-primary" style="padding:6px 14px;font-size:13px;" onclick="addPlatformEntry('fast')">+ إضافة إيراد اليوم</button>
+      </div>
+      <div class="card-body" id="platformWrap_fast"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head">
+        <span class="badge">🍽️ eat yummy</span>
+        <button class="btn-primary" style="padding:6px 14px;font-size:13px;" onclick="addPlatformEntry('eatYummy')">+ إضافة إيراد اليوم</button>
+      </div>
+      <div class="card-body" id="platformWrap_eatYummy"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="badge">🛒 المشتريات</span>
+        <button class="btn-primary" style="padding:6px 14px;font-size:13px;" onclick="addPurchaseItem()">+ إضافة</button>
+      </div>
+      <div class="card-body" id="purchasesWrap"></div>
+    </div>
+
+    <div class="footer-note">
+      <b>طريقة الشغل:</b> دوس "+ إضافة إيراد اليوم" في أي منصة (طلبات / فاست / eat yummy) وهيتسجل بتاريخ النهاردة تلقائي — اكتب المبلغ وبس. أما "المشتريات" فبتضيف فيها عناصر تقدر تسمّيها وتحط أرقامها زي ما تحب، وتعدّل الاسم أو الرقم في أي وقت.
+    </div>
+  </div>
+
+  <div class="page" id="pageSalaries">
+    <header>
+      <h1 style="font-size:19px;">المرتبات</h1>
+      <p class="sub">المرتبات غالبًا بتتصرف يوم 5 كل شهر. سجّل كل موظف ومرتبه، ولما تصرفهولّه دوس ✓.</p>
+      <div class="toolbar">
+        <button class="btn-primary" id="addSalaryBtn">+ إضافة موظف</button>
+      </div>
+    </header>
+
+    <div class="cards" id="salariesWrap" style="margin-top:16px;"></div>
+
+    <div class="footer-note">
+      <b>طريقة الحساب هنا:</b> لما تدوس ✓ جنب أي موظف، معناها إنه أخد مرتبه، ومرتبه بيتحسب كخصم (بالسالب) في "الإجمالي الأرباح" في الداش بورد. لو لغيت العلامة، الخصم بيتشال تلقائي.
+    </div>
   </div>
 
   <div class="page" id="pageSettings">
@@ -838,7 +911,7 @@ let supplierOrderCounter = 0;
 function addSupplier(){
   supplierCounter++;
   const id = 's' + supplierCounter;
-  suppliers.push({id, name:'', paid:0, orders:[]});
+  suppliers.push({id, name:'', orders:[]});
   renderSuppliers();
 }
 
@@ -850,8 +923,7 @@ function removeSupplier(id){
 function updateSupplier(id, field, value){
   const sup = suppliers.find(s => s.id === id);
   if(!sup) return;
-  sup[field] = (field === 'paid') ? Number(value) : value;
-  if(field === 'paid') updateSupplierTotals(id);
+  sup[field] = value;
   // name field: no re-render needed, so the keyboard never closes while typing
 }
 
@@ -888,17 +960,8 @@ function updateSupplierTotals(supplierId){
   const sup = suppliers.find(s => s.id === supplierId);
   if(!sup) return;
   const owed = supplierOwed(sup);
-  const paid = Number(sup.paid) || 0;
-  const remaining = owed - paid;
-
   const owedEl = document.getElementById('owed_' + supplierId);
-  const remainingEl = document.getElementById('remaining_' + supplierId);
-  const remainingBox = document.getElementById('remainingBox_' + supplierId);
   if(owedEl) owedEl.textContent = formatNum(owed);
-  if(remainingEl) remainingEl.textContent = formatNum(remaining);
-  if(remainingBox){
-    remainingBox.style.background = remaining > 0 ? '' : 'linear-gradient(135deg,#2f7d5a,#1f5c40)';
-  }
 }
 
 function renderSuppliers(){
@@ -910,8 +973,6 @@ function renderSuppliers(){
 
   wrap.innerHTML = suppliers.map((sup, idx) => {
     const owed = supplierOwed(sup);
-    const paid = Number(sup.paid) || 0;
-    const remaining = owed - paid;
     return `
       <div class="card">
         <div class="card-head">
@@ -956,19 +1017,9 @@ function renderSuppliers(){
             <button onclick="addSupplierOrder('${sup.id}')">+ إضافة طلبية جديدة لهذا المورد</button>
           </div>
 
-          <div class="summary-readout">
-            <span class="lbl">المبلغ المستحق (مجموع الطلبيات)</span>
+          <div class="summary-total">
+            <span class="lbl">الإجمالي (بيتخصم من الأرباح مباشرة)</span>
             <span class="val" id="owed_${sup.id}">${formatNum(owed)}</span>
-          </div>
-
-          <div class="field">
-            <div class="field-label"><span>المدفوع</span></div>
-            <input type="number" step="any" value="${sup.paid}" oninput="updateSupplier('${sup.id}','paid',this.value)">
-          </div>
-
-          <div class="summary-total" id="remainingBox_${sup.id}" style="${remaining > 0 ? '' : 'background:linear-gradient(135deg,#2f7d5a,#1f5c40);'}">
-            <span class="lbl">الباقي</span>
-            <span class="val" id="remaining_${sup.id}">${formatNum(remaining)}</span>
           </div>
 
         </div>
@@ -978,7 +1029,7 @@ function renderSuppliers(){
 }
 
 // ---------- Monthly Inventory ----------
-let monthlyRecords = []; // {id, monthLabel, totalProfit, totalWithdrawals, suppliersRemaining, netProfit, note}
+let monthlyRecords = []; // {id, monthLabel, totalProfit, suppliersOwed, netProfit, note}
 let inventoryCounter = 0;
 
 function defaultMonthLabel(){
@@ -1018,46 +1069,45 @@ function confirmMonthPick(){
   const label = month + ' ' + year;
 
   const totalProfit = totalProfitFromSummary();
-  const totalWd = totalWithdrawals();
+  const totalRevenue = totalPlatformRevenue();
+  const totalPurchases = totalPurchasesSum();
+  const totalSalariesPaid = totalPaidSalaries();
   const suppliersOwed = suppliers.reduce((acc,s) => acc + supplierOwed(s), 0);
-  const suppliersPaid = suppliers.reduce((acc,s) => acc + (Number(s.paid)||0), 0);
-  const suppliersRemaining = suppliersOwed - suppliersPaid;
-  const netProfit = totalProfit - totalWd - suppliersRemaining;
+  const netProfit = totalProfit + totalRevenue - totalPurchases - totalSalariesPaid - suppliersOwed;
 
   inventoryCounter++;
   monthlyRecords.push({
     id: 'inv' + inventoryCounter,
     monthLabel: label,
-    totalProfit, totalWithdrawals: totalWd, suppliersRemaining, netProfit,
-    note: ''
+    totalProfit, totalRevenue, totalPurchases, totalSalariesPaid, suppliersOwed, netProfit
   });
+
+  // reset transactional data for the new month — supplier orders are deducted immediately, so they reset too
+  summaryInputs = {};
+  platformEntries = {talabat:[], fast:[], eatYummy:[]};
+  purchaseItems = [];
+  salaries.forEach(s => s.paid = false);
+  suppliers.forEach(s => s.orders = []);
+
   closeMonthPicker();
   renderInventory();
-}
-
-function removeInventoryRecord(id){
-  monthlyRecords = monthlyRecords.filter(m => m.id !== id);
-  renderInventory();
-}
-
-function updateInventoryNote(id, value){
-  const rec = monthlyRecords.find(m => m.id === id);
-  if(!rec) return;
-  rec.note = value;
-  // no re-render needed, so the keyboard never closes while typing
+  renderDashboard();
+  renderRevenuePage();
+  renderSalaries();
+  renderSuppliers();
 }
 
 function renderInventory(){
   const wrap = document.getElementById('inventoryWrap');
   if(monthlyRecords.length === 0){
-    wrap.innerHTML = `<div class="empty-state">لسه مفيش جرد مسجل — دوس "تسجيل جرد شهر جديد" تبدأ.</div>`;
+    wrap.innerHTML = `<div class="empty-state">لسه مفيش حساب مقفول — دوس "تقفيل الحساب" تبدأ.</div>`;
     return;
   }
   wrap.innerHTML = monthlyRecords.slice().reverse().map(rec => `
     <div class="card">
       <div class="card-head">
         <span class="badge">${escapeHtml(rec.monthLabel)}</span>
-        <button class="row-remove" onclick="removeInventoryRecord('${rec.id}')" title="حذف الجرد">🗑</button>
+        <span class="badge" style="background:#e2efec;color:var(--teal-deep);">🔒 مقفول</span>
       </div>
       <div class="card-body">
         <div class="summary-readout">
@@ -1065,20 +1115,24 @@ function renderInventory(){
           <span class="val">${formatNum(rec.totalProfit)}</span>
         </div>
         <div class="summary-readout">
-          <span class="lbl">إجمالي السحوبات</span>
-          <span class="val">${formatNum(rec.totalWithdrawals)}</span>
+          <span class="lbl">إجمالي الإيرادات</span>
+          <span class="val">${formatNum(rec.totalRevenue ?? 0)}</span>
         </div>
         <div class="summary-readout">
-          <span class="lbl">الباقي للموردين</span>
-          <span class="val">${formatNum(rec.suppliersRemaining)}</span>
+          <span class="lbl">إجمالي المشتريات</span>
+          <span class="val">${formatNum(rec.totalPurchases ?? 0)}</span>
+        </div>
+        <div class="summary-readout">
+          <span class="lbl">إجمالي المرتبات المدفوعة</span>
+          <span class="val">${formatNum(rec.totalSalariesPaid ?? 0)}</span>
+        </div>
+        <div class="summary-readout">
+          <span class="lbl">إجمالي طلبيات الموردين</span>
+          <span class="val">${formatNum(rec.suppliersOwed ?? rec.suppliersRemaining ?? 0)}</span>
         </div>
         <div class="summary-total">
           <span class="lbl">الإجمالي الأرباح</span>
           <span class="val">${formatNum(rec.netProfit)}</span>
-        </div>
-        <div class="field">
-          <div class="field-label"><span>ملاحظات</span></div>
-          <input type="text" value="${escapeAttr(rec.note)}" placeholder="أي ملاحظة عن الشهر ده" oninput="updateInventoryNote('${rec.id}',this.value)">
         </div>
       </div>
     </div>
@@ -1176,27 +1230,205 @@ function renderNotes(){
   `).join('');
 }
 
-// ---------- Withdrawals ----------
-let withdrawals = []; // {id, amount, note}
-let withdrawalCounter = 0;
+// ---------- Delivery platforms & purchases ----------
+let platformEntries = {talabat:[], fast:[], eatYummy:[]};
+let platformCounter = 0;
+let purchaseItems = [];
+let purchaseCounter = 0;
 
-function addWithdrawal(){
-  withdrawalCounter++;
-  withdrawals.push({id:'w'+withdrawalCounter, amount:0, note:''});
-  renderDashboard();
+function formatTodayDate(){
+  const now = new Date();
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  return now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
 }
 
-function removeWithdrawal(id){
-  withdrawals = withdrawals.filter(w => w.id !== id);
-  renderDashboard();
+function addPlatformEntry(platformKey){
+  platformCounter++;
+  platformEntries[platformKey].push({id:'p'+platformCounter, date: formatTodayDate(), amount:0});
+  renderPlatform(platformKey);
 }
 
-function updateWithdrawal(id, field, value){
-  const w = withdrawals.find(w => w.id === id);
-  if(!w) return;
-  w[field] = (field === 'amount') ? Number(value) : value;
+function removePlatformEntry(platformKey, entryId){
+  platformEntries[platformKey] = platformEntries[platformKey].filter(e => e.id !== entryId);
+  renderPlatform(platformKey);
+}
+
+function updatePlatformEntryAmount(platformKey, entryId, value){
+  const entry = platformEntries[platformKey].find(e => e.id === entryId);
+  if(!entry) return;
+  entry.amount = Number(value) || 0;
+  const totalEl = document.getElementById('platformTotal_' + platformKey);
+  if(totalEl){
+    const total = platformEntries[platformKey].reduce((acc,e) => acc + (Number(e.amount)||0), 0);
+    totalEl.textContent = formatNum(total);
+  }
+}
+
+function renderPlatform(platformKey){
+  const wrap = document.getElementById('platformWrap_' + platformKey);
+  const entries = platformEntries[platformKey];
+  const total = entries.reduce((acc,e) => acc + (Number(e.amount)||0), 0);
+
+  if(entries.length === 0){
+    wrap.innerHTML = `<div class="empty-state">لسه مفيش إيرادات مسجلة.</div>`;
+    return;
+  }
+
+  wrap.innerHTML = entries.slice().reverse().map(e => `
+    <div class="field" style="margin-bottom:8px;">
+      <div class="field-label"><span>📅 ${escapeHtml(e.date)}</span>
+        <div class="label-actions"><button class="remove-col" onclick="removePlatformEntry('${platformKey}','${e.id}')" title="حذف">×</button></div>
+      </div>
+      <input type="number" step="any" value="${e.amount}" placeholder="الإيراد" oninput="updatePlatformEntryAmount('${platformKey}','${e.id}',this.value)">
+    </div>
+  `).join('') + `
+    <div class="summary-readout">
+      <span class="lbl">إجمالي الإيراد</span>
+      <span class="val" id="platformTotal_${platformKey}">${formatNum(total)}</span>
+    </div>
+  `;
+}
+
+function addPurchaseItem(){
+  purchaseCounter++;
+  purchaseItems.push({id:'pu'+purchaseCounter, name:'', amount:0});
+  renderPurchases();
+}
+
+function removePurchaseItem(id){
+  purchaseItems = purchaseItems.filter(p => p.id !== id);
+  renderPurchases();
+}
+
+function updatePurchaseField(id, field, value){
+  const item = purchaseItems.find(p => p.id === id);
+  if(!item) return;
+  item[field] = (field === 'amount') ? (Number(value)||0) : value;
+  if(field === 'amount'){
+    const totalEl = document.getElementById('purchasesTotal');
+    if(totalEl){
+      const total = purchaseItems.reduce((acc,p) => acc + (Number(p.amount)||0), 0);
+      totalEl.textContent = formatNum(total);
+    }
+  }
+  // name field: no re-render needed, so the keyboard never closes while typing
+}
+
+function renderPurchases(){
+  const wrap = document.getElementById('purchasesWrap');
+  const total = purchaseItems.reduce((acc,p) => acc + (Number(p.amount)||0), 0);
+
+  if(purchaseItems.length === 0){
+    wrap.innerHTML = `<div class="empty-state">لسه مفيش عناصر — دوس "+ إضافة".</div>`;
+    return;
+  }
+
+  wrap.innerHTML = purchaseItems.map(p => `
+    <div class="card" style="background:#f8faf9;margin-bottom:10px;">
+      <div class="card-head" style="background:#f0f5f4;">
+        <span class="badge" style="background:#e2efec;color:var(--teal-deep);">عنصر</span>
+        <button class="row-remove" onclick="removePurchaseItem('${p.id}')" title="حذف">🗑</button>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <div class="field-label"><span>الاسم</span></div>
+          <input type="text" value="${escapeAttr(p.name)}" placeholder="اسم العنصر" oninput="updatePurchaseField('${p.id}','name',this.value)">
+        </div>
+        <div class="field">
+          <div class="field-label"><span>الرقم</span></div>
+          <input type="number" step="any" value="${p.amount}" oninput="updatePurchaseField('${p.id}','amount',this.value)">
+        </div>
+      </div>
+    </div>
+  `).join('') + `
+    <div class="summary-readout">
+      <span class="lbl">إجمالي المشتريات</span>
+      <span class="val" id="purchasesTotal">${formatNum(total)}</span>
+    </div>
+  `;
+}
+
+function renderRevenuePage(){
+  renderPlatform('talabat');
+  renderPlatform('fast');
+  renderPlatform('eatYummy');
+  renderPurchases();
+}
+
+function totalPlatformRevenue(){
+  return ['talabat','fast','eatYummy'].reduce((acc, key) => {
+    return acc + platformEntries[key].reduce((sum,e) => sum + (Number(e.amount)||0), 0);
+  }, 0);
+}
+
+function totalPurchasesSum(){
+  return purchaseItems.reduce((acc,p) => acc + (Number(p.amount)||0), 0);
+}
+
+// ---------- Salaries ----------
+let salaries = []; // {id, name, salary, paid}
+let salaryCounter = 0;
+
+function addSalary(){
+  salaryCounter++;
+  salaries.push({id:'sal'+salaryCounter, name:'', salary:0, paid:false});
+  renderSalaries();
+}
+
+function removeSalary(id){
+  salaries = salaries.filter(s => s.id !== id);
+  renderSalaries();
   updateDashboardTotals();
-  // note field: no re-render needed, so the keyboard never closes while typing
+}
+
+function updateSalaryField(id, field, value){
+  const sal = salaries.find(s => s.id === id);
+  if(!sal) return;
+  sal[field] = (field === 'salary') ? (Number(value)||0) : value;
+  // name/salary fields: no re-render needed, so the keyboard never closes while typing
+  if(field === 'salary' && sal.paid) updateDashboardTotals();
+}
+
+function toggleSalaryPaid(id){
+  const sal = salaries.find(s => s.id === id);
+  if(!sal) return;
+  sal.paid = !sal.paid;
+  renderSalaries();
+  updateDashboardTotals();
+}
+
+function totalPaidSalaries(){
+  return salaries.reduce((acc,s) => acc + (s.paid ? (Number(s.salary)||0) : 0), 0);
+}
+
+function renderSalaries(){
+  const wrap = document.getElementById('salariesWrap');
+  if(salaries.length === 0){
+    wrap.innerHTML = `<div class="empty-state">لسه مفيش موظفين مسجلين — دوس "+ إضافة موظف".</div>`;
+    return;
+  }
+  wrap.innerHTML = salaries.map(s => `
+    <div class="card">
+      <div class="card-head">
+        <span class="badge">${escapeHtml(s.name) || 'موظف'}</span>
+        <button class="row-remove" onclick="removeSalary('${s.id}')" title="حذف">🗑</button>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <div class="field-label"><span>الاسم</span></div>
+          <input type="text" value="${escapeAttr(s.name)}" placeholder="اسم الموظف" oninput="updateSalaryField('${s.id}','name',this.value)">
+        </div>
+        <div class="field">
+          <div class="field-label"><span>المرتب</span></div>
+          <input type="number" step="any" value="${s.salary}" oninput="updateSalaryField('${s.id}','salary',this.value)">
+        </div>
+        <button class="paid-toggle ${s.paid ? 'paid' : ''}" onclick="toggleSalaryPaid('${s.id}')">
+          <span class="circle">${s.paid ? '✓' : ''}</span>
+          ${s.paid ? 'اتصرف المرتب ✓' : 'لسه ما اتصرفش'}
+        </button>
+      </div>
+    </div>
+  `).join('');
 }
 
 function totalProfitFromSummary(){
@@ -1207,54 +1439,26 @@ function totalProfitFromSummary(){
   }, 0);
 }
 
-function totalWithdrawals(){
-  return withdrawals.reduce((acc,w) => acc + (Number(w.amount)||0), 0);
-}
-
 function updateDashboardTotals(){
   const totalProfit = totalProfitFromSummary();
-  const totalWd = totalWithdrawals();
+  const totalRevenue = totalPlatformRevenue();
+  const totalPurchases = totalPurchasesSum();
+  const totalSalariesPaid = totalPaidSalaries();
 
   const suppliersOwed = suppliers.reduce((acc,s) => acc + supplierOwed(s), 0);
-  const suppliersPaid = suppliers.reduce((acc,s) => acc + (Number(s.paid)||0), 0);
-  const suppliersRemaining = suppliersOwed - suppliersPaid;
 
-  const net = totalProfit - totalWd - suppliersRemaining;
+  const net = totalProfit + totalRevenue - totalPurchases - totalSalariesPaid - suppliersOwed;
 
   document.getElementById('dashTotalProfit').textContent = formatNum(totalProfit);
-  document.getElementById('dashTotalWithdrawals').textContent = formatNum(totalWd);
+  document.getElementById('dashTotalRevenue').textContent = formatNum(totalRevenue);
+  document.getElementById('dashTotalPurchases').textContent = formatNum(totalPurchases);
+  document.getElementById('dashTotalSalariesPaid').textContent = formatNum(totalSalariesPaid);
   document.getElementById('dashSuppliersOwed').textContent = formatNum(suppliersOwed);
-  document.getElementById('dashSuppliersPaid').textContent = formatNum(suppliersPaid);
-  document.getElementById('dashSuppliersRemaining').textContent = formatNum(suppliersRemaining);
   document.getElementById('dashNetProfit').textContent = formatNum(net);
 }
 
 function renderDashboard(){
   updateDashboardTotals();
-
-  const wrap = document.getElementById('withdrawalsWrap');
-  if(withdrawals.length === 0){
-    wrap.innerHTML = `<div class="empty-state">لسه مفيش سحوبات مسجلة.</div>`;
-    return;
-  }
-  wrap.innerHTML = withdrawals.map((w, idx) => `
-    <div class="card">
-      <div class="card-head">
-        <span class="badge">سحب ${idx+1}</span>
-        <button class="row-remove" onclick="removeWithdrawal('${w.id}')" title="حذف السحب">🗑</button>
-      </div>
-      <div class="card-body">
-        <div class="field">
-          <div class="field-label"><span>المبلغ</span></div>
-          <input type="number" step="any" value="${w.amount}" oninput="updateWithdrawal('${w.id}','amount',this.value)">
-        </div>
-        <div class="field">
-          <div class="field-label"><span>ملاحظات</span></div>
-          <input type="text" value="${escapeAttr(w.note)}" placeholder="سبب السحب" oninput="updateWithdrawal('${w.id}','note',this.value)">
-        </div>
-      </div>
-    </div>
-  `).join('');
 }
 
 function addRow(){
@@ -1377,6 +1581,8 @@ function showPage(page){
   document.getElementById('pageInventory').classList.toggle('active', page === 'inventory');
   document.getElementById('pageCompare').classList.toggle('active', page === 'compare');
   document.getElementById('pageNotes').classList.toggle('active', page === 'notes');
+  document.getElementById('pageRevenue').classList.toggle('active', page === 'revenue');
+  document.getElementById('pageSalaries').classList.toggle('active', page === 'salaries');
   document.getElementById('pageSettings').classList.toggle('active', page === 'settings');
   document.getElementById('tabProductsBtn').classList.toggle('active', page === 'products');
   document.getElementById('tabSummaryBtn').classList.toggle('active', page === 'summary');
@@ -1385,6 +1591,8 @@ function showPage(page){
   document.getElementById('tabInventoryBtn').classList.toggle('active', page === 'inventory');
   document.getElementById('tabCompareBtn').classList.toggle('active', page === 'compare');
   document.getElementById('tabNotesBtn').classList.toggle('active', page === 'notes');
+  document.getElementById('tabRevenueBtn').classList.toggle('active', page === 'revenue');
+  document.getElementById('tabSalariesBtn').classList.toggle('active', page === 'salaries');
   document.getElementById('tabSettingsBtn').classList.toggle('active', page === 'settings');
   if(page === 'summary') renderSummary();
   if(page === 'suppliers') renderSuppliers();
@@ -1392,6 +1600,8 @@ function showPage(page){
   if(page === 'inventory') renderInventory();
   if(page === 'compare') renderCompare();
   if(page === 'notes') renderNotes();
+  if(page === 'revenue') renderRevenuePage();
+  if(page === 'salaries') renderSalaries();
   closeSidebar();
 }
 
@@ -1509,8 +1719,8 @@ function escapeAttr(s){ return escapeHtml(s); }
 document.getElementById('addColBtn').addEventListener('click', addColumn);
 document.getElementById('addRowBtn').addEventListener('click', addRow);
 document.getElementById('addSupplierBtn').addEventListener('click', addSupplier);
-document.getElementById('addWithdrawalBtn').addEventListener('click', addWithdrawal);
 document.getElementById('addInventoryBtn').addEventListener('click', addInventory);
+document.getElementById('addSalaryBtn').addEventListener('click', addSalary);
 
 loadPassword();
 
