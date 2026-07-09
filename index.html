@@ -551,7 +551,6 @@
   <div class="page" id="pageProducts">
     <div class="toolbar">
       <button class="btn-primary" id="addRowBtn">+ إضافة صنف</button>
-      <button class="btn-ghost" id="addColBtn">+ إضافة خانة تكلفة</button>
     </div>
 
     <div class="cards" id="cardsWrap"></div>
@@ -843,6 +842,12 @@ async function changePassword(){
 
 <script>
 let dynCols = []; // {id, name}
+const FIXED_COST_COLUMNS = [
+  'اجرة الشيف','اجرة المطبخ','اجرة الصاله','كهرباء','مياه','تواصل','زيت','نشا',
+  'دقيق','تغليف','كماري','فيليه','جمبري لحم ك','جمبري لحم صغير','صوص','غاز',
+  'خضار','بطاطس ف الكيس','لبن','كريمه','جبنه','كوفير','سلطه','رز',
+  'بطاطس فرايد','سلامي','هالبينو','بصل','مشروم','بسله','عيش','الخدمه'
+];
 let rows = [];    // {id, name, price, note, values:{colId:num}, profit}
 let colCounter = 0;
 let rowCounter = 0;
@@ -1511,10 +1516,6 @@ function render(){
           <div class="field">
             <div class="field-label">
               <span>${escapeHtml(c.name)}</span>
-              <div class="label-actions">
-                <button class="edit-col" onclick="renameColumn('${c.id}')" title="تغيير الاسم">✎</button>
-                <button class="remove-col" onclick="removeColumn('${c.id}')" title="حذف الخانة">×</button>
-              </div>
             </div>
             <input type="number" step="any" value="${r.values[c.id] ?? 0}" oninput="updateValue('${r.id}','${c.id}',this.value)">
           </div>
@@ -1538,11 +1539,7 @@ function render(){
 
       </div>
     </div>
-  `).join('') + `
-    <div class="add-col-tile">
-      <button onclick="addColumn()">+ إضافة خانة تكلفة جديدة لكل الأصناف</button>
-    </div>
-  `;
+  `).join('');
 }
 
 let summaryInputs = {}; // rowId -> number entered by user for that product's table
@@ -1700,7 +1697,6 @@ function escapeHtml(s){
 }
 function escapeAttr(s){ return escapeHtml(s); }
 
-document.getElementById('addColBtn').addEventListener('click', addColumn);
 document.getElementById('addRowBtn').addEventListener('click', addRow);
 document.getElementById('addSupplierBtn').addEventListener('click', addSupplier);
 document.getElementById('addInventoryBtn').addEventListener('click', addInventory);
@@ -1784,7 +1780,51 @@ async function saveStateNow(){
 function scheduleSave(){
   if(!stateLoaded) return;
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveStateNow, 900);
+  saveTimer = setTimeout(saveStateNow, 350);
+}
+
+// حفظ فوري (بدون انتظار) لما تخرج من أي خانة كتابة — شبكة أمان إضافية
+function flushSaveNow(){
+  if(!stateLoaded) return;
+  clearTimeout(saveTimer);
+  saveStateNow();
+}
+
+// حفظ إجباري لو المستخدم عمل refresh أو قفل التاب فجأة، حتى لو لسه في وسط الـ 350ms
+function flushSaveOnUnload(){
+  if(!stateLoaded) return;
+  try{
+    const payload = JSON.stringify([{ id: STATE_ROW_ID, data: collectState(), updated_at: new Date().toISOString() }]);
+    fetch(SUPABASE_URL + '/rest/v1/app_state?on_conflict=id', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: payload,
+      keepalive: true
+    });
+  }catch(e){ /* أفضل محاولة، مفيش أكتر من كده ممكن نعمله وقت إغلاق الصفحة */ }
+}
+window.addEventListener('beforeunload', flushSaveOnUnload);
+window.addEventListener('pagehide', flushSaveOnUnload);
+document.addEventListener('change', flushSaveNow);
+
+function ensureFixedColumns(){
+  const existingNames = new Set(dynCols.map(c => c.name));
+  FIXED_COST_COLUMNS.forEach(name => {
+    if(!existingNames.has(name)){
+      colCounter++;
+      const id = 'c' + colCounter;
+      dynCols.push({id, name});
+      rows.forEach(r => { if(r.values[id] === undefined) r.values[id] = 0; });
+    }
+  });
+  const fixedSet = new Set(FIXED_COST_COLUMNS);
+  dynCols = dynCols.filter(c => fixedSet.has(c.name));
+  dynCols.sort((a,b) => FIXED_COST_COLUMNS.indexOf(a.name) - FIXED_COST_COLUMNS.indexOf(b.name));
 }
 
 async function initApp(){
@@ -1806,6 +1846,7 @@ async function initApp(){
     if(rows.length === 0) addRow();
   }
 
+  ensureFixedColumns();
   render();
   renderDashboard();
   stateLoaded = true;
