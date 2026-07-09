@@ -6,6 +6,7 @@
 <title>حاسبة تسعير المنتجات</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg: #eef2f1;
@@ -784,24 +785,6 @@
 <script>
 let APP_PASSWORD = '1234';
 
-async function loadPassword(){
-  try{
-    const res = await window.storage.get('app_password', false);
-    if(res && res.value) APP_PASSWORD = res.value;
-  }catch(e){
-    // no saved password yet — keep the default
-  }
-}
-
-async function savePassword(newPass){
-  APP_PASSWORD = newPass;
-  try{
-    await window.storage.set('app_password', newPass, false);
-  }catch(e){
-    console.error('تعذر حفظ الرقم السري', e);
-  }
-}
-
 function tryLogin(){
   const input = document.getElementById('loginPasswordInput');
   const errorEl = document.getElementById('loginError');
@@ -848,7 +831,8 @@ async function changePassword(){
     return;
   }
 
-  await savePassword(next);
+  APP_PASSWORD = next;
+  await saveStateNow();
   msgEl.textContent = '✅ تم تغيير الرقم السري بنجاح';
   msgEl.className = 'settings-msg ok';
   document.getElementById('settingsCurrentPassword').value = '';
@@ -1722,11 +1706,117 @@ document.getElementById('addSupplierBtn').addEventListener('click', addSupplier)
 document.getElementById('addInventoryBtn').addEventListener('click', addInventory);
 document.getElementById('addSalaryBtn').addEventListener('click', addSalary);
 
-loadPassword();
+// ---------- Supabase connection ----------
+const SUPABASE_URL = 'https://mekbawzwkyuwiuvjqbko.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1la2Jhd3p3a3l1d2l1dmpxYmtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MDYzNjEsImV4cCI6MjA5OTE4MjM2MX0.bMwOX3gl6k-jnFYSjLeqG8wmlewIG_YFVuEqIQXt4Gw';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const STATE_ROW_ID = 'main';
 
-// start with one sample row
-addRow();
-renderDashboard();
+let stateLoaded = false;
+let saveTimer = null;
+let saveIndicatorTimer = null;
+
+function collectState(){
+  return {
+    dynCols, rows, colCounter, rowCounter, colLabels,
+    suppliers, supplierCounter, supplierOrderCounter,
+    monthlyRecords, inventoryCounter,
+    notes, noteCounter,
+    platformEntries, platformCounter,
+    purchaseItems, purchaseCounter,
+    salaries, salaryCounter,
+    summaryInputs,
+    appPassword: APP_PASSWORD
+  };
+}
+
+function applyLoadedState(d){
+  if(!d) return;
+  dynCols = d.dynCols || [];
+  rows = d.rows || [];
+  colCounter = d.colCounter || 0;
+  rowCounter = d.rowCounter || 0;
+  colLabels = d.colLabels || colLabels;
+  suppliers = d.suppliers || [];
+  supplierCounter = d.supplierCounter || 0;
+  supplierOrderCounter = d.supplierOrderCounter || 0;
+  monthlyRecords = d.monthlyRecords || [];
+  inventoryCounter = d.inventoryCounter || 0;
+  notes = d.notes || [];
+  noteCounter = d.noteCounter || 0;
+  platformEntries = d.platformEntries || {talabat:[], fast:[], eatYummy:[]};
+  platformCounter = d.platformCounter || 0;
+  purchaseItems = d.purchaseItems || [];
+  purchaseCounter = d.purchaseCounter || 0;
+  salaries = d.salaries || [];
+  salaryCounter = d.salaryCounter || 0;
+  summaryInputs = d.summaryInputs || {};
+  if(d.appPassword) APP_PASSWORD = d.appPassword;
+}
+
+function showSaveIndicator(text){
+  let el = document.getElementById('saveIndicator');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'saveIndicator';
+    el.style.cssText = 'position:fixed;bottom:14px;left:14px;background:#0a4f47;color:#fff;font-family:IBM Plex Sans Arabic, sans-serif;font-size:12px;padding:6px 12px;border-radius:20px;z-index:100;opacity:0;transition:opacity .25s ease;box-shadow:0 2px 8px rgba(0,0,0,.2);';
+    document.body.appendChild(el);
+  }
+  el.textContent = text;
+  el.style.opacity = '1';
+  clearTimeout(saveIndicatorTimer);
+  saveIndicatorTimer = setTimeout(() => { el.style.opacity = '0'; }, 1500);
+}
+
+async function saveStateNow(){
+  try{
+    const { error } = await supabaseClient
+      .from('app_state')
+      .upsert({ id: STATE_ROW_ID, data: collectState(), updated_at: new Date().toISOString() });
+    if(error) throw error;
+    showSaveIndicator('✅ تم الحفظ على القاعدة');
+  }catch(e){
+    console.error('تعذر الحفظ على قاعدة البيانات', e);
+    showSaveIndicator('⚠️ تعذر الحفظ — تحقق من الاتصال');
+  }
+}
+
+function scheduleSave(){
+  if(!stateLoaded) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveStateNow, 900);
+}
+
+async function initApp(){
+  try{
+    const { data, error } = await supabaseClient
+      .from('app_state')
+      .select('data')
+      .eq('id', STATE_ROW_ID)
+      .maybeSingle();
+    if(error) throw error;
+
+    if(data && data.data){
+      applyLoadedState(data.data);
+    } else {
+      addRow(); // أول مرة — صنف تجريبي واحد
+    }
+  }catch(e){
+    console.error('تعذر تحميل البيانات من قاعدة البيانات، هيتم البدء ببيانات فاضية', e);
+    if(rows.length === 0) addRow();
+  }
+
+  render();
+  renderDashboard();
+  stateLoaded = true;
+  scheduleSave(); // يضمن إن أول نسخة (لو أول مرة) تتحفظ فورًا
+}
+
+// أي تعديل (كتابة أو ضغط زرار) جوه التطبيق يحفظ تلقائيًا على القاعدة
+document.addEventListener('input', scheduleSave);
+document.addEventListener('click', scheduleSave);
+
+initApp();
 </script>
 </body>
 </html>
